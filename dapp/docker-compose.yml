@@ -1,0 +1,36 @@
+version: "3.8"
+
+services:
+  chain:
+    image: ghcr.io/foundry-rs/foundry:latest
+    container_name: cert-chain
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      "anvil --host 0.0.0.0 --port 8545 --base-fee 0 --block-time 1"
+    ports:
+      - "8545:8545"
+
+  hardhat:
+    image: node:18
+    container_name: cert-hardhat
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: >
+      sh -c "npm install &&
+             npx hardhat compile &&
+             npx hardhat run scripts/deploy.js --network docker"
+    depends_on:
+      - chain
+
+  client:
+    image: node:18
+    container_name: cert-client
+    working_dir: /app
+    volumes:
+      - ./:/app
+    command: >
+      sh -c "npm install &&
+             npx hardhat run scripts/interact.js --network docker"
+    depends_on:
+      - hardhat
